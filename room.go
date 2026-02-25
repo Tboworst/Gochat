@@ -57,7 +57,11 @@ const (
 	messageBufferSize = 256
 )
 
-var upgrader = &websocket.Upgrader{ReadBufferSize: socketBufferSize, WriteBufferSize: socketBufferSize}
+var upgrader = &websocket.Upgrader{
+	ReadBufferSize:  socketBufferSize,
+	WriteBufferSize: socketBufferSize,
+	CheckOrigin:     func(r *http.Request) bool { return true },
+}
 
 var rooms = make(map[string]*room)
 var mu sync.Mutex

@@ -11,26 +11,28 @@ function Chat() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [room, setRoom] = useState(getRoomFromURL());
+  const [connected, setConnected] = useState(false);
   const ws = useRef(null);
 
   useEffect(() => {
     if (!room) return;
     ws.current = new window.WebSocket(WS_URL(room));
+    ws.current.onopen = () => setConnected(true);
+    ws.current.onclose = () => setConnected(false);
     ws.current.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
         setMessages(msgs => [...msgs, data]);
       } catch (err) {
-        // fallback for non-JSON messages
         setMessages(msgs => [...msgs, { name: 'system', message: event.data }]);
       }
     };
-    return () => ws.current && ws.current.close();
+    return () => { ws.current && ws.current.close(); setConnected(false); };
   }, [room]);
 
   const sendMessage = (e) => {
     e.preventDefault();
-    if (input && ws.current && ws.current.readyState === 1) {
+    if (input && ws.current && connected) {
       ws.current.send(input);
       setInput('');
     }
@@ -64,9 +66,10 @@ function Chat() {
           value={input}
           onChange={e => setInput(e.target.value)}
           style={{ flex: 1, marginRight: 8 }}
-          placeholder="Type a message..."
+          placeholder={connected ? 'Type a message...' : 'Connecting...'}
+          disabled={!connected}
         />
-        <button type="submit">Send</button>
+        <button type="submit" disabled={!connected}>Send</button>
       </form>
     </div>
   );
